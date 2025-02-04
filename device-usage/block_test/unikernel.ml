@@ -46,7 +46,7 @@ struct
   let start mclock b1 b2 =
     let before = test_clock mclock in
     copy_block b1 b2 >>= fun () ->
-    Unikraft_os.Time.sleep_ns 100000L >>= fun () ->
+    Solo5_os.Time.sleep_ns 100000L >>= fun () ->
     let after = MClock.elapsed_ns mclock in
     Printf.printf "before = %Ld, after = %Ld\n" before after;
     Printf.printf "time = %Ld\n" Int64.(sub after before);
