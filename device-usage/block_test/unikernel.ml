@@ -1,18 +1,26 @@
 open Lwt.Infix
+open Cmdliner
+
+let buffsize =
+  let doc = Arg.info ~doc:"number of sectors to transfer at a time" [ "buffsize" ] in
+  Arg.(value & opt int 50 doc)
 
 module Main
   (MClock : Mirage_clock.MCLOCK)
   (B1 : Mirage_block.S)
-  (B2 : Mirage_block.S) =
+  (B2 : Mirage_block.S with type error = B1.error and type write_error =
+      B1.write_error) =
 struct
   let log_src = Logs.Src.create "block" ~doc:"block tester"
 
   module Log = (val Logs.src_log log_src : Logs.LOG)
 
-  let copy_block b1 b2 =
+  let (let*) = Lwt.bind
+
+  let copy_block b1 b2 buffsize =
+    let get_ok () = Lwt.map Result.get_ok in
     B1.get_info b1 >>= fun info ->
     Log.info (fun f -> f "%a" Mirage_block.pp_info info);
-    let buffsize = 201 in
     let sectors = [ Cstruct.create (buffsize * info.sector_size) ] in
     let rec aux off =
       if off >= info.size_sectors then Lwt.return_unit
@@ -23,32 +31,14 @@ struct
             (remain, [ Cstruct.create (remain * info.sector_size) ])
           else (buffsize, sectors)
         in
-        B1.read b1 off sectors >>= fun r ->
-        (match r with
-        | Ok () -> Log.info (fun f -> f "Read OK of %d at %Ld" len off)
-        | Error e ->
-            Log.err (fun m -> m "%a" B1.pp_error e);
-            exit 2);
-        B2.write b2 off sectors >>= fun r ->
-        (match r with
-        | Ok () -> Log.info (fun f -> f "Write OK of %d at %Ld" len off)
-        | Error e ->
-            Log.err (fun m -> m "%a" B2.pp_write_error e);
-            exit 2);
+        let* () = B1.read b1 off sectors |> get_ok () in
+        let* () = B2.write b2 off sectors |> get_ok () in
         aux Int64.(add off (of_int len))
     in
     aux 0L
 
-  let [@inline never] test_clock mclock =
-    let time = MClock.elapsed_ns mclock in
-    time
-
-  let start mclock b1 b2 =
-    let before = test_clock mclock in
-    copy_block b1 b2 >>= fun () ->
-    Solo5_os.Time.sleep_ns 100000L >>= fun () ->
-    let after = MClock.elapsed_ns mclock in
-    Printf.printf "before = %Ld, after = %Ld\n" before after;
-    Printf.printf "time = %Ld\n" Int64.(sub after before);
+  let start _mclock b1 b2 buffsize =
+    Logs.info (fun f -> f "Buffsize: %d" buffsize);
+    let* res = copy_block b1 b2 buffsize in
     Lwt.return_unit
 end

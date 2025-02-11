@@ -1,8 +1,10 @@
 open Mirage
 
+let runtime_args = [ runtime_arg ~pos:__POS__ "Unikernel.buffsize" ]
+
 let main =
   let packages = [ package "duration" ] in
-  main ~packages "Unikernel.Main" (mclock @-> block @-> block @-> job)
+  main ~runtime_args ~packages "Unikernel.Main" (mclock @-> block @-> block @-> job)
 
 let img1 =
   if_impl Key.is_solo5 (block_of_file "storage1")
