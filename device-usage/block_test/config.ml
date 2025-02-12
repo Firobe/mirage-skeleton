@@ -1,6 +1,9 @@
 open Mirage
 
-let runtime_args = [ runtime_arg ~pos:__POS__ "Unikernel.buffsize" ]
+let runtime_args = [ 
+    runtime_arg ~pos:__POS__ "Unikernel.buffsize";
+    runtime_arg ~pos:__POS__ "Unikernel.parallel"
+]
 
 let main =
   let packages = [ package "duration" ] in
