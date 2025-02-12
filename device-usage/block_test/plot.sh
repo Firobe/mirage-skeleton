@@ -1,15 +1,17 @@
 #!/bin/sh
-cut -d ',' -f2 parallel_true.csv | tail -n +2 > /tmp/paratrue
-cut -d ',' -f2 parallel_false.csv | tail -n +2 > /tmp/parafalse
-cat parallel_true.csv | sed 's/.*--buffsize \([0-9]\+\).*/\1/' | tail -n +2 > /tmp/xrange
-paste /tmp/xrange /tmp/paratrue > /tmp/truefinal
-paste /tmp/xrange /tmp/parafalse > /tmp/falsefinal
 cat << EOF > /tmp/plot
-set title "Benchmark copying 100M of data"
+set title "Time to copy 10M of random data (avg. over 10 runs)"
 set logscale x 10
+set logscale y 10
 set xlabel "buffer size (number of sectors)"
-set ylabel "time (s)"
-plot '/tmp/truefinal' with lp title 'solo5-hvt parallel', \
-     '/tmp/falsefinal' with lp title 'solo5-hvt serial'
+set ylabel "time (ns)"
+set yrange [0:]
+plot \
+    'hvt-true.dat' with lp title 'solo5-hvt parallel', \
+    'hvt-false.dat' with lp title 'solo5-hvt serial', \
+    'spt-true.dat' with lp title 'solo5-spt parallel', \
+    'spt-false.dat' with lp title 'solo5-spt serial', \
+    'qemu-true.dat' with lp title 'mirage-unikraft parallel', \
+    'qemu-false.dat' with lp title 'mirage-unikraft serial'
 EOF
 gnuplot --persist /tmp/plot

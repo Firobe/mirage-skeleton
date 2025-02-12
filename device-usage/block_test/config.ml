@@ -9,12 +9,7 @@ let main =
   let packages = [ package "duration" ] in
   main ~runtime_args ~packages "Unikernel.Main" (mclock @-> block @-> block @-> job)
 
-let img1 =
-  if_impl Key.is_solo5 (block_of_file "storage1")
-    ((block_of_file "disk1.img"))
-
-let img2 =
-  if_impl Key.is_solo5 (block_of_file "storage2")
-    ((block_of_file "disk2.img"))
+let img1 = block_of_file "block0"
+let img2 = block_of_file "block1"
 
 let () = register "block_test" [ main $ default_monotonic_clock $ img1 $ img2 ]
