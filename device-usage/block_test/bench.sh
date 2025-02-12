@@ -35,7 +35,7 @@ do_bench () {
             rm -f "$filename"
             touch "$filename"
             # Scan through various buffer sizes
-            for buffsize in 2 5 10 50 100 200 500 1000 2000; do
+            for buffsize in 1 2 5 10 20 50 100 200 500 1000 2000; do
                 sum=0
                 # Average 10 runs
                 for run in {1..10}; do
