@@ -1,4 +1,5 @@
 #!/bin/sh
+EXT=hvt
 FILESIZE=100M
 make build
 for parallel in true false; do
@@ -10,10 +11,10 @@ for parallel in true false; do
                    dd if=/dev/urandom of=storage2 bs=$FILESIZE count=1 iflag=fullblock && \
                    echo {BUFFSIZE} >> xdata" \
         --export-csv "parallel_$parallel.csv" \
-        "solo5-spt \
+        "solo5-$EXT \
             --block:storage1=storage1 \
             --block:storage2=storage2 \
-            dist/block_test.spt \
+            dist/block_test.$EXT \
             --buffsize {BUFFSIZE} \
             --parallel $parallel"
 done
