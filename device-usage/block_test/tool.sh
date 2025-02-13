@@ -1,5 +1,5 @@
 #!/bin/bash
-FILESIZE=20M
+FILESIZE=50M
 BENCH_DIR=results/
 BENCH_NAME="${BENCH_NAME:-laptop}"
 
@@ -65,7 +65,7 @@ do_bench () {
 do_plot () {
     pfx="$BENCH_DIR/$BENCH_NAME"
     cat << EOF > /tmp/plot
-set title "Time to copy 20M of random data (avg. over 10 runs)"
+set title "Time to copy $FILESIZE of random data (avg. over 10 runs)"
 set logscale x 10
 set xlabel "buffer size (number of sectors)"
 set ylabel "time (s)"
