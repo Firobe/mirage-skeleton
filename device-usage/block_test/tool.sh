@@ -69,7 +69,7 @@ set title "Time to copy $FILESIZE of random data (avg. over 10 runs)"
 set logscale x 10
 set xlabel "buffer size (number of sectors)"
 set ylabel "time (s)"
-set yrange [0:0.25]
+set yrange [0:0.7]
 plot \
     '$pfx/hvt-true.dat' u 1:(\$2/1000000000) with lp title 'solo5-hvt parallel', \
     '$pfx/hvt-false.dat' u 1:(\$2/1000000000) with lp title 'solo5-hvt serial', \
