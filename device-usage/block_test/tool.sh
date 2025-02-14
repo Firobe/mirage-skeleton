@@ -2,6 +2,48 @@
 FILESIZE=50M
 BENCH_DIR=results/
 BENCH_NAME="${BENCH_NAME:-laptop}"
+FIRECRACKER="./firecracker/firecracker-v1.7.0-x86_64"
+
+make_fc_config () {
+    cat << EOF > /tmp/fc.json
+{
+  "boot-source": {
+    "kernel_image_path": "dist/block_test.fc",
+    "boot_args": "dist/block_test.fc -- --buffsize $1 --parallel $2 --logs error",
+    "initrd_path": null
+  },
+  "drives": [
+      {
+          "drive_id": "block0",
+          "path_on_host": "block0",
+          "is_root_device": false,
+          "is_read_only": false
+      },
+      {
+          "drive_id": "block1",
+          "path_on_host": "block1",
+          "is_root_device": false,
+          "is_read_only": false
+      }
+  ],
+  "machine-config": {
+    "vcpu_count": 1,
+    "mem_size_mib": 4096,
+    "smt": false,
+    "track_dirty_pages": false,
+    "huge_pages": "None"
+  },
+  "cpu-config": null,
+  "balloon": null,
+  "network-interfaces": [],
+  "vsock": null,
+  "logger": null,
+  "metrics": null,
+  "mmds-config": null,
+  "entropy": null
+}
+EOF
+}
 
 do_run () {
     case $1 in
@@ -21,6 +63,17 @@ do_run () {
                 -drive file=block0,if=virtio,id=hvirtio0,format=raw \
                 -drive file=block1,if=virtio,id=hvirtio1,format=raw &> log.txt
             ;;
+        fc)
+            # kill firecracker when 'done' is printed
+            tail -f log.txt | grep 'done' -m 1 &> /dev/null && pkill firecracker &
+            # firecracker doesn't support more than 8 sectors at a time
+            if [ "$2" -gt 8 ]; then
+                make_fc_config 8 "$3"
+            else
+                make_fc_config "$2" "$3"
+            fi
+            $FIRECRACKER --no-api --config-file "/tmp/fc.json" &> log.txt
+            ;;
         *)
             echo "unknown format $1"
             exit 1
@@ -31,7 +84,12 @@ do_run () {
 do_bench () {
     mkdir -p "$BENCH_DIR/$BENCH_NAME"
     # Bench all unikernel kinds
-    for kind in qemu spt hvt; do
+    for kind in qemu fc spt hvt; do
+        binary_file="dist/block_test.$kind"
+        if [ ! -f "$binary_file" ]; then
+            echo "Unikernel file $binary_file not found, skipping this category."
+            continue
+        fi
         # Try running Lwt copies in parallel or not
         for parallel in true false; do
             filename="$BENCH_DIR/$BENCH_NAME/$kind-$parallel.dat"
@@ -75,8 +133,10 @@ plot \
     '$pfx/hvt-false.dat' u 1:(\$2/1000000000) with lp title 'solo5-hvt serial', \
     '$pfx/spt-true.dat' u 1:(\$2/1000000000) with lp title 'solo5-spt parallel', \
     '$pfx/spt-false.dat' u 1:(\$2/1000000000) with lp title 'solo5-spt serial', \
-    '$pfx/qemu-true.dat' u 1:(\$2/1000000000) with lp title 'mirage-unikraft parallel', \
-    '$pfx/qemu-false.dat' u 1:(\$2/1000000000) with lp title 'mirage-unikraft serial'
+    '$pfx/fc-true.dat' u 1:(\$2/1000000000) with lp title 'unikraft-firecracker parallel', \
+    '$pfx/fc-false.dat' u 1:(\$2/1000000000) with lp title 'unikraft-firecracker serial', \
+    '$pfx/qemu-true.dat' u 1:(\$2/1000000000) with lp title 'unikraft-qemu parallel', \
+    '$pfx/qemu-false.dat' u 1:(\$2/1000000000) with lp title 'unikraft-qemu serial'
 EOF
     gnuplot --persist /tmp/plot
 }
