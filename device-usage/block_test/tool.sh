@@ -125,6 +125,7 @@ do_plot () {
     cat << EOF > /tmp/plot
 set title "Time to copy $FILESIZE of random data (avg. over 10 runs)"
 set logscale x 10
+set key font ",6"
 set xlabel "buffer size (number of sectors)"
 set ylabel "time (s)"
 set yrange [0:0.7]
