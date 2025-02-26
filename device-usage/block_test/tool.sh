@@ -45,6 +45,25 @@ make_fc_config () {
 EOF
 }
 
+get_qemu_options () {
+    arch=$(uname -m)
+    mem="4G"
+    common="-cpu host --enable-kvm -nographic -nodefaults -serial stdio"
+    cmd="qemu-system-$arch"
+    case "$arch" in
+        x86_64)
+	    add_options=""
+	    ;;
+	aarch64)
+	    add_options="-M virt"
+	    ;;
+	*)
+	    echo "unknown arch $arch for qemu"
+	    exit 1
+    esac
+    echo -n "$cmd $common $add_options"
+}
+
 do_run () {
     case $1 in
         hvt | spt)
@@ -58,7 +77,8 @@ do_run () {
         qemu)
             # kill qemu when 'done' is printed
             tail -f log.txt | grep 'done' -m 1 &> /dev/null && pkill qemu &
-            qemu-system-x86_64 -cpu host -m 4G --enable-kvm -nographic -nodefaults -serial stdio \
+	    QEMU=$(get_qemu_options)
+            $QEMU \
                 -kernel dist/block_test.qemu -append "--buffsize $2 --parallel $3 --logs error" \
                 -drive file=block0,if=virtio,id=hvirtio0,format=raw \
                 -drive file=block1,if=virtio,id=hvirtio1,format=raw &> log.txt
