@@ -47,8 +47,8 @@ EOF
 
 get_qemu_options () {
     arch=$(uname -m)
-    mem="4G"
-    common="-cpu host --enable-kvm -nographic -nodefaults -serial stdio"
+    mem="1G"
+    common="-cpu host --enable-kvm -nographic -nodefaults -serial stdio -m $mem"
     cmd="qemu-system-$arch"
     case "$arch" in
         x86_64)
@@ -68,8 +68,8 @@ do_run () {
     case $1 in
         hvt | spt)
             solo5-"$1" \
-                --block:block0=block0 \
-                --block:block1=block1 \
+                --block:0=block0 \
+                --block:1=block1 \
                 "dist/block_test.$1" \
                 --buffsize "$2" \
                 --parallel "$3" > log.txt

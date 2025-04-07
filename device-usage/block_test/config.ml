@@ -7,9 +7,9 @@ let runtime_args = [
 
 let main =
   let packages = [ package "duration" ] in
-  main ~runtime_args ~packages "Unikernel.Main" (mclock @-> block @-> block @-> job)
+  main ~runtime_args ~packages "Unikernel.Main" (block @-> block @-> job)
 
-let img1 = block_of_file "block0"
-let img2 = block_of_file "block1"
+let img1 = block_of_file "0"
+let img2 = block_of_file "1"
 
-let () = register "block_test" [ main $ default_monotonic_clock $ img1 $ img2 ]
+let () = register "block_test" [ main $ img1 $ img2 ]
