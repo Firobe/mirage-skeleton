@@ -86,7 +86,7 @@ bench_spt ()
     sleep 1s
 }
 
-#build_unikraft
+[ -f "dist/network.qemu" ] || build_unikraft
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_UK
 bench_unikraft 1
@@ -95,7 +95,7 @@ bench_unikraft 3
 bench_unikraft 4
 bench_unikraft 8
 
-#build_solo5
+[ -f "dist/network.hvt" ] || build_hvt
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_HVT
 bench_hvt 1
@@ -103,6 +103,8 @@ bench_hvt 2
 bench_hvt 3
 bench_hvt 4
 bench_hvt 8
+
+[ -f "dist/network.spt" ] || build_spt
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_SPT
 bench_spt 1
