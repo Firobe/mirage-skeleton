@@ -74,7 +74,7 @@ bench_solo5 ()
 
 }
 
-build_unikraft
+[ -f "dist/network.qemu" ] || build_unikraft
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_UK
 bench_unikraft 1
@@ -89,7 +89,7 @@ bench_unikraft 80
 bench_unikraft 90
 bench_unikraft 100
 
-build_solo5
+[ -f "dist/network.hvt" ] || build_solo5
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_SOLO
 bench_solo5 1
