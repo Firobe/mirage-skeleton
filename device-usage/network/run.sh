@@ -47,7 +47,7 @@ dump ()
 
 send ()
 {
-  for ((i = 0; i <= $1; i++));
+  for ((i = 0; i < $1; i++));
   do
     dump | nc -nw1 10.0.0.2 8080 &
   done
