@@ -23,8 +23,8 @@ run_solo5 ()
 
 run_unikraft ()
 {
-    qemu-system-x86_64 -nographic -nodefaults -serial stdio -machine q35 \
-      -cpu "qemu64,-vmx,-svm,+x2apic,+pdpe1gb,+rdrand,+rdseed" -m 1G     \
+    qemu-system-x86_64 -nographic -nodefaults -serial stdio -enable-kvm \
+      -cpu host -m 1G     \
       -netdev tap,id=hnet0,ifname=tap0,vhost=off,script=no,downscript=no \
       -device virtio-net-pci,netdev=hnet0,id=net0                        \
       -kernel dist/network.qemu -append "--ipv4-only=true"
