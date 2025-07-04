@@ -39,10 +39,7 @@ filter_output ()
 
 dump ()
 {
-  for ((i = 0; i <= 15; i++));
-  do
-    cat $ASSETS
-  done
+  dd if=/dev/random
 }
 
 send ()
