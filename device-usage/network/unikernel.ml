@@ -8,10 +8,7 @@ let port =
   in
   Mirage_runtime.register_arg Arg.(value & opt int 8080 doc)
 
-type stats = {
-  mutable start : int64 option;
-  mutable size : int;
-}
+type stats = { mutable start : int64 option; mutable size : int }
 
 let stats () = { start = None; size = 0 }
 
@@ -36,25 +33,26 @@ let tick stats size =
 
 module Main (S : Tcpip.Stack.V4V6) = struct
   let start s =
+    let stats = stats () in
     let rec loop stats flow =
       kick_start stats;
-        S.TCP.read flow >>= function
-        | Ok `Eof ->
-            dump stats;
-            Logs.info (fun f -> f "Closing connection!");
-            S.TCP.close flow
-        | Error e ->
-            Logs.warn (fun f ->
-                f "Error reading data from established connection: %a"
-                  S.TCP.pp_error e);
-            Lwt.return_unit
-        | Ok (`Data b) ->
-            let length = Cstruct.length b in
-            tick stats length;
-            loop stats flow
+      S.TCP.read flow >>= function
+      | Ok `Eof ->
+          dump stats;
+          Logs.info (fun f -> f "Closing connection!");
+          S.TCP.close flow
+      | Error e ->
+          Logs.warn (fun f ->
+              f "Error reading data from established connection: %a"
+                S.TCP.pp_error e);
+          Lwt.return_unit
+      | Ok (`Data b) ->
+          let length = Cstruct.length b in
+          tick stats length;
+          loop stats flow
     in
     S.TCP.listen (S.tcp s) ~port:(port ()) (fun flow ->
-        let dst, dst_port = S.TCP.dst flow and stats = stats () in
+        let dst, dst_port = S.TCP.dst flow in
         Logs.info (fun f ->
             f "new tcp connection from IP %s on port %d" (Ipaddr.to_string dst)
               dst_port);

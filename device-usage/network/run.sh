@@ -1,30 +1,41 @@
 #!/bin/bash
 
-ASSETS=assets/shakespeare.txt
 DATA_UK=unikraft_data.dat
-DATA_SOLO=solo5_data.dat
+DATA_HVT=hvt_data.dat
+DATA_SPT=spt_data.dat
 
-build_solo5 ()
+build_hvt ()
 {
-  mirage configure -t hvt
-  make
+    mirage configure -t hvt
+    make
 }
 
 build_unikraft ()
 {
-  mirage configure -t unikraft-qemu
-  make
+    mirage configure -t unikraft-qemu
+    make
 }
 
-run_solo5 ()
+build_spt ()
 {
-  solo5-hvt --net:service=tap0 -- dist/network.hvt --ipv4=10.0.0.2/24
+    mirage configure -t spt
+    make
+}
+
+run_hvt ()
+{
+    solo5-hvt --net:service=tap0 -- dist/network.hvt --ipv4=10.0.0.2/24
+}
+
+run_spt ()
+{
+    solo5-spt --net:service=tap0 -- dist/network.spt --ipv4=10.0.0.2/24
 }
 
 run_unikraft ()
 {
-    qemu-system-x86_64 -nographic -nodefaults -serial stdio -machine q35 \
-      -cpu "qemu64,-vmx,-svm,+x2apic,+pdpe1gb,+rdrand,+rdseed" -m 1G     \
+    qemu-system-x86_64 -nographic -nodefaults -serial stdio -enable-kvm \
+      -cpu host -m 1G     \
       -netdev tap,id=hnet0,ifname=tap0,vhost=off,script=no,downscript=no \
       -device virtio-net-pci,netdev=hnet0,id=net0                        \
       -kernel dist/network.qemu -append "--ipv4-only=true"
@@ -34,74 +45,70 @@ filter_output ()
 {
 (awk 'BEGIN { N = 0; S = 0; T = 0}
           {if ($4 ~ "Read") N++; SIZE += $5; TIME += $8 }
-          END { printf "%s\n", int(SIZE / N) / int(TIME / N)}' >> $1)
-}
-
-dump ()
-{
-  for ((i = 0; i <= 15; i++));
-  do
-    cat $ASSETS
-  done
+          END { printf "%s\n", int(SIZE / N) / int(TIME / N) * 1000}' >> "$1")
 }
 
 send ()
 {
-  for ((i = 0; i <= $1; i++));
-  do
-    dump | nc -nw1 10.0.0.2 8080 &
-  done
+    parallel -N0 'dd if=/dev/zero bs=64M count=8 iflag=fullblock | nc -nq0 10.0.0.2 8080' ::: $(seq "$1")
 }
 
 bench_unikraft ()
 {
-(sleep 15; pkill 'qemu-system.*') &
-    (sleep 2s;            \
-      send $1;
-      sleep 1s;) &
-    printf "%s\t" $1 >> $DATA_UK;
-    run_unikraft | filter_output $DATA_UK
+    echo "bench unikraft $1"
+    printf "%s\t" "$1" >> $DATA_UK;
+    run_unikraft | filter_output $DATA_UK &
+    send "$1"
+    sleep 1s
+    pkill 'qemu-system.*'
+    sleep 1s
 }
 
-bench_solo5 ()
+bench_hvt ()
 {
-  (sleep 15; pkill 'solo5*') &
-  (sleep 2s;
-  send $1;
-  sleep 1s;) &
-  printf "%s\t" $1 >> $DATA_SOLO;
-  run_solo5 | filter_output $DATA_SOLO
-
+    echo "bench hvt $1"
+    printf "%s\t" "$1" >> $DATA_HVT;
+    run_hvt | filter_output $DATA_HVT &
+    send "$1"
+    sleep 1s
+    pkill 'solo5'
+    sleep 1s
 }
 
-build_unikraft
+bench_spt ()
+{
+    echo "bench spt $1"
+    printf "%s\t" "$1" >> $DATA_SPT;
+    run_spt | filter_output $DATA_SPT &
+    send "$1"
+    sleep 1s
+    pkill 'solo5'
+    sleep 1s
+}
+
+#build_unikraft
 
 printf "# %s\t%s\n" "N" "SPEED" > $DATA_UK
 bench_unikraft 1
-bench_unikraft 10
-bench_unikraft 20
-bench_unikraft 30
-bench_unikraft 40
-bench_unikraft 50
-bench_unikraft 60
-bench_unikraft 70
-bench_unikraft 80
-bench_unikraft 90
-bench_unikraft 100
+bench_unikraft 2
+bench_unikraft 3
+bench_unikraft 4
+bench_unikraft 8
 
-build_solo5
+#build_solo5
 
-printf "# %s\t%s\n" "N" "SPEED" > $DATA_SOLO
-bench_solo5 1
-bench_solo5 10
-bench_solo5 20
-bench_solo5 30
-bench_solo5 40
-bench_solo5 50
-bench_solo5 60
-bench_solo5 70
-bench_solo5 80
-bench_solo5 90
-bench_solo5 100
+printf "# %s\t%s\n" "N" "SPEED" > $DATA_HVT
+bench_hvt 1
+bench_hvt 2
+bench_hvt 3
+bench_hvt 4
+bench_hvt 8
+
+printf "# %s\t%s\n" "N" "SPEED" > $DATA_SPT
+bench_spt 1
+bench_spt 2
+bench_spt 3
+bench_spt 4
+bench_spt 8
 
 gnuplot plot.gnu
