@@ -32,10 +32,29 @@ run_spt ()
     solo5-spt --net:service=tap0 -- dist/network.spt --ipv4=10.0.0.2/24
 }
 
+get_qemu_options () {
+    arch=$(uname -m)
+    mem="1G"
+    common="-cpu host --enable-kvm -nographic -nodefaults -serial stdio -m $mem"
+    cmd="qemu-system-$arch"
+    case "$arch" in
+      x86_64)
+	    add_options=""
+	    ;;
+	  aarch64)
+	    add_options="-M virt"
+	    ;;
+	  *)
+	    echo "unknown arch $arch for qemu"
+	    exit 1
+    esac
+    echo -n "$cmd $common $add_options"
+}
+
 run_unikraft ()
 {
-    qemu-system-x86_64 -nographic -nodefaults -serial stdio -enable-kvm \
-      -cpu host -m 1G     \
+    QEMU=$(get_qemu_options)
+    $QEMU \
       -netdev tap,id=hnet0,ifname=tap0,vhost=off,script=no,downscript=no \
       -device virtio-net-pci,netdev=hnet0,id=net0                        \
       -kernel dist/network.qemu -append "--ipv4-only=true"
