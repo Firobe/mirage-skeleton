@@ -33,13 +33,13 @@ support it.
    runtime to be even comparable with the others).
 - Run `./bench.sh bench`. This will run all available images for various
    combinations of `--parallel` and `--buffsize`, taking the average of 10 runs
-   for each data point. The results will be written in `results/BENCH_DIR`
-   (where `BENCH_DIR` is an env variable you can customize).
+   for each data point. The results will be written in `results/BENCH_NAME`
+   (where `BENCH_NAME` is an env variable you can customize).
 
 ## Visualizing the results
 
 You can display a graph of the results of a given benchmark with gnuplot by
-running `BENCH_DIR=... ./bench.sh plot`
+running `BENCH_NAME=... ./bench.sh plot`
 
 Some results are already commited in this repository (see the `results`
 subfolders).
