@@ -86,12 +86,9 @@ do_run () {
         fc)
             # kill firecracker when 'done' is printed
             tail -f log.txt | grep 'done' -m 1 &> /dev/null && pkill firecracker &
-            # firecracker doesn't support more than 8 sectors at a time
-            if [ "$2" -gt 8 ]; then
-                make_fc_config 8 "$3"
-            else
-                make_fc_config "$2" "$3"
-            fi
+            # firecracker doesn't support more than 8 sectors at a time, but
+            # this is now handled by the driver itself
+            make_fc_config "$2" "$3"
             $FIRECRACKER --no-api --config-file "/tmp/fc.json" &> log.txt
             ;;
         *)
