@@ -1,7 +1,7 @@
 set title 'Mirage network benchmark (receiving 512M of zeros per connection.)'
 set terminal png enhanced large
 set output 'graph.png'
-set xlabel 'Simultenaous connections'
+set xlabel 'Simultaneous connections'
 set ylabel 'Bytes received per second'
 set format y '%.0s%cB'
 plot 'unikraft_data.dat' title 'Unikraft' with line, \
